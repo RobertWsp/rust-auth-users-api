@@ -1,21 +1,23 @@
-use actix_web::HttpResponse;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Claims {
     pub sub: String,
     pub exp: usize,
+    pub scopes: Vec<String>,
 }
 
 pub fn get_secret() -> String {
     env::var("JWT_SECRET").expect("JWT_SECRET não configurado")
 }
 
-pub fn generate_token(user_id: &str) -> Result<String, jsonwebtoken::errors::Error> {
+pub fn generate_token(
+    user_id: &str,
+    scopes: Vec<String>,
+) -> Result<String, jsonwebtoken::errors::Error> {
     let expiration = Utc::now()
         .checked_add_signed(Duration::minutes(60))
         .expect("Erro ao definir tempo de expiração")
@@ -24,6 +26,7 @@ pub fn generate_token(user_id: &str) -> Result<String, jsonwebtoken::errors::Err
     let claims = Claims {
         sub: user_id.to_owned(),
         exp: expiration,
+        scopes,
     };
 
     let secret = get_secret();
@@ -44,24 +47,4 @@ pub fn validate_token(token: &str) -> Result<Claims, jsonwebtoken::errors::Error
         &Validation::default(),
     )?;
     Ok(token_data.claims)
-}
-
-pub fn authenticate(token: &str) -> Result<Claims, HttpResponse> {
-    let secret = get_secret();
-
-    let token_data = decode::<Claims>(
-        token,
-        &DecodingKey::from_secret(secret.as_ref()),
-        &Validation::default(),
-    );
-
-    match token_data {
-        Ok(data) => Ok(data.claims),
-        Err(_) => {
-            let response = HttpResponse::Unauthorized().json(json!({
-                "message": "Token is invalid or expired"
-            }));
-            Err(response)
-        }
-    }
 }
