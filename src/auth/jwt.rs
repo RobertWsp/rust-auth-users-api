@@ -2,6 +2,7 @@ use actix_web::HttpResponse;
 use chrono::{Duration, Utc};
 use jsonwebtoken::{DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use std::env;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -57,7 +58,9 @@ pub fn authenticate(token: &str) -> Result<Claims, HttpResponse> {
     match token_data {
         Ok(data) => Ok(data.claims),
         Err(_) => {
-            let response = HttpResponse::Unauthorized().json("Token inválido ou expirado");
+            let response = HttpResponse::Unauthorized().json(json!({
+                "message": "Token is invalid or expired"
+            }));
             Err(response)
         }
     }

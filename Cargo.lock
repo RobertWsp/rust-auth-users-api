@@ -2730,6 +2730,7 @@ dependencies = [
  "jsonwebtoken",
  "mongodb",
  "serde",
+ "serde_json",
 ]
 
 [[package]]
